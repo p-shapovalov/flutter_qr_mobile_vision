@@ -60,6 +60,10 @@ class QrDetector implements OnSuccessListener<List<Barcode>>, OnFailureListener 
     }
 
     private void processFrame(Frame frame) {
+        if (this.width == 0 && this.height == 0) {
+            this.width = frame.getWidth();
+            this.height = frame.getHeight();
+        }
         InputImage image;
         try {
             image = frame.toImage();
