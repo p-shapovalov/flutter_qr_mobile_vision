@@ -1,11 +1,6 @@
 package com.github.rmtmckenzie.qrmobilevision;
 
-import android.content.Context;
-import android.graphics.Rect;
 import android.util.Log;
-import android.view.Display;
-import android.view.Surface;
-import android.view.WindowManager;
 
 import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
@@ -26,8 +21,14 @@ import java.util.List;
 
 class QrDetector implements OnSuccessListener<List<Barcode>>, OnFailureListener {
     private static final String TAG = "cgr.qrmv.QrDetector";
-    private final QrMobileVisionPlugin communicator;
+    private final QrReaderCallbacks communicator;
     private final BarcodeScanner detector;
+
+    public interface Frame {
+        InputImage toImage();
+
+        void close();
+    }
 
     @GuardedBy("this")
     private InputImage latestFrame;
@@ -37,9 +38,9 @@ class QrDetector implements OnSuccessListener<List<Barcode>>, OnFailureListener 
     private int width;
     private int height;
 
-    QrDetector(QrMobileVisionPlugin communicator, BarcodeScannerOptions opts) {
+    QrDetector(QrReaderCallbacks communicator, BarcodeScannerOptions options) {
         this.communicator = communicator;
-        this.detector = BarcodeScanning.getClient(opts);
+        this.detector = BarcodeScanning.getClient(options);
     }
 
     void detect(InputImage frame) {
@@ -58,13 +59,17 @@ class QrDetector implements OnSuccessListener<List<Barcode>>, OnFailureListener 
         }
     }
 
-    private void processFrame(InputImage frame) {
-        if (this.width == 0 && this.height == 0) {
-            this.width = frame.getWidth();
-            this.height = frame.getHeight();
+    private void processFrame(Frame frame) {
+        InputImage image;
+        try {
+            image = frame.toImage();
+        } catch (IllegalStateException ex) {
+            // ignore state exception from making frame to image
+            // as the image may be closed already.
+            return;
         }
 
-        detector.process(frame)
+        detector.process(image)
             .addOnSuccessListener(this)
             .addOnFailureListener(this);
     }

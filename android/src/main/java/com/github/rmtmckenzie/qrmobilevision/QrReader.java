@@ -23,7 +23,7 @@ class QrReader {
     private CameraSource camera;
 
     QrReader(int width, int height, Activity context, BarcodeScannerOptions options,
-             final QRReaderStartedCallback startedCallback, final QrMobileVisionPlugin communicator,
+             final QRReaderStartedCallback startedCallback, final QrReaderCallbacks communicator,
              final SurfaceTexture texture) {
         this.context = context;
         this.startedCallback = startedCallback;

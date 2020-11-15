@@ -9,7 +9,6 @@ import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.WindowManager;
 
-import com.google.android.gms.vision.Frame;
 import com.google.mlkit.vision.common.InputImage;
 
 import java.io.IOException;
@@ -51,15 +50,35 @@ class QrCameraC1 {
         this.context = context;
     }
 
+
     private int getFirebaseOrientation() {
         WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         int deviceRotation = windowManager.getDefaultDisplay().getRotation();
         int rotationCompensation = (ORIENTATIONS.get(deviceRotation) + info.orientation + 270) % 360;
 
         // Return the corresponding FirebaseVisionImageMetadata rotation value.
-        return rotationCompensation;
+        int result;
+        switch (rotationCompensation) {
+            case 0:
+                result = Surface.ROTATION_0;
+                break;
+            case 90:
+                result = Surface.ROTATION_90;
+                break;
+            case 180:
+                result = Surface.ROTATION_180;
+                break;
+            case 270:
+                result = Surface.ROTATION_270;
+                break;
+            default:
+                result = Surface.ROTATION_0;
+                Log.e(TAG, "Bad rotation value: " + rotationCompensation);
+        }
+        return result;
     }
 
+    @Override
     public void start() throws QrReader.Exception {
         int numberOfCameras = android.hardware.Camera.getNumberOfCameras();
         info = new android.hardware.Camera.CameraInfo();
@@ -100,7 +119,11 @@ class QrCameraC1 {
                     android.hardware.Camera.Size previewSize = camera.getParameters().getPreviewSize();
 
                     if (data != null) {
-                        detector.detect(InputImage.fromByteArray(data, previewSize.width, previewSize.height, getFirebaseOrientation(), IMAGEFORMAT));
+
+                        QrDetector.Frame frame = new Frame(data,
+                            previewSize.width, previewSize.height, getFirebaseOrientation(), IMAGEFORMAT);
+
+                        detector.detect(frame);
                     } else {
                         //TODO: something better here?
                         System.out.println("It's NULL!");
@@ -117,6 +140,34 @@ class QrCameraC1 {
 
     }
 
+    static class Frame implements QrDetector.Frame {
+        private byte[] data;
+        private final int imageFormat;
+        private final int width;
+        private final int height;
+        private final int rotationDegrees;
+
+        Frame(byte[] data, int width, int height, int rotationDegrees, int imageFormat) {
+            this.data = data;
+            this.width = width;
+            this.height = height;
+            this.rotationDegrees = rotationDegrees;
+            this.imageFormat = imageFormat;
+        }
+
+        @Override
+        public InputImage toImage() {
+            //fromByteArray(byte[] byteArray, int width, int height, int rotationDegrees, int format)
+            return InputImage.fromByteArray(data, width, height, rotationDegrees, imageFormat);
+        }
+
+        @Override
+        public void close() {
+            data = null;
+        }
+    }
+
+    @Override
     public int getWidth() {
         return camera.getParameters().getPreviewSize().height;
     }
