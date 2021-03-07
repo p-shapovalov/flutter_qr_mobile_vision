@@ -25,7 +25,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String qr;
+  String? qr;
   bool camState = false;
 
   @override
@@ -64,7 +64,9 @@ class _MyAppState extends State<MyApp> {
                               decoration: new BoxDecoration(
                                 color: Colors.transparent,
                                 border: Border.all(
-                                    color: Colors.orange, width: 10.0, style: BorderStyle.solid),
+                                    color: Colors.orange,
+                                    width: 10.0,
+                                    style: BorderStyle.solid),
                               ),
                             ),
                           ),

@@ -1,12 +1,11 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class PreviewDetails {
   num width;
   num height;
-  num sensorOrientation;
+  int sensorOrientation;
   int textureId;
 
   PreviewDetails(
@@ -41,10 +40,10 @@ class QrMobileVision {
 
   //Set target size before starting
   static Future<PreviewDetails> start({
-    @required int width,
-    @required int height,
-    @required QRCodeHandler qrCodeHandler,
-    List<BarcodeFormats> formats = _defaultBarcodeFormats,
+    required int width,
+    required int height,
+    required QRCodeHandler qrCodeHandler,
+    List<BarcodeFormats>? formats = _defaultBarcodeFormats,
   }) async {
     final _formats = formats ?? _defaultBarcodeFormats;
     assert(_formats.length > 0);
@@ -65,7 +64,7 @@ class QrMobileVision {
     assert(details is Map<dynamic, dynamic>);
 
     int textureId = details["textureId"];
-    num orientation = details["surfaceOrientation"];
+    int orientation = details["surfaceOrientation"];
     num surfaceHeight = details["surfaceHeight"];
     num surfaceWidth = details["surfaceWidth"];
 
@@ -74,7 +73,7 @@ class QrMobileVision {
   }
 
   static Future stop() {
-    channelReader.setQrCodeHandler(null);
+    channelReader.clearQrCodeHandler();
     return _channel.invokeMethod('stop').catchError(print);
   }
 
@@ -86,8 +85,8 @@ class QrMobileVision {
     return _channel.invokeMethod('heartbeat').catchError(print);
   }
 
-  static Future<List<List<int>>> getSupportedSizes() {
-    return _channel.invokeMethod('getSupportedSizes').catchError(print);
+  static Future<List<List<int>>?> getSupportedSizes() {
+    return _channel.invokeMethod<List<List<int>>>('getSupportedSizes');
   }
 }
 
@@ -100,10 +99,7 @@ class QrChannelReader {
     channel.setMethodCallHandler((MethodCall call) async {
       switch (call.method) {
         case 'qrRead':
-          if (qrCodeHandler != null) {
-            assert(call.arguments is String);
-            qrCodeHandler(call.arguments);
-          }
+          if (qrCodeHandler != null) qrCodeHandler!(call.arguments);
           break;
         default:
           print("QrChannelHandler: unknown method call received at "
@@ -116,6 +112,8 @@ class QrChannelReader {
     this.qrCodeHandler = qrch;
   }
 
+  clearQrCodeHandler() => this.qrCodeHandler = null;
+
   MethodChannel channel;
-  QRCodeHandler qrCodeHandler;
+  QRCodeHandler? qrCodeHandler;
 }
