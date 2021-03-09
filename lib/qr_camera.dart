@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:native_device_orientation/native_device_orientation.dart';
 import 'package:qr_mobile_vision/qr_mobile_vision.dart';
 
 final WidgetBuilder _defaultNotStartedBuilder = (context) => new Container();
@@ -185,11 +186,48 @@ class Preview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FittedBox(
-        fit: fit,
-        child: SizedBox(
-            width: width,
-            height: height,
-            child: Texture(textureId: textureId)));
+    return new NativeDeviceOrientationReader(
+      builder: (context) {
+        var nativeOrientation =
+            NativeDeviceOrientationReader.orientation(context);
+
+        int nativeRotation = 0;
+        switch (nativeOrientation) {
+          case NativeDeviceOrientation.portraitUp:
+            nativeRotation = 0;
+            break;
+          case NativeDeviceOrientation.landscapeRight:
+            nativeRotation = 90;
+            break;
+          case NativeDeviceOrientation.portraitDown:
+            nativeRotation = 180;
+            break;
+          case NativeDeviceOrientation.landscapeLeft:
+            nativeRotation = 270;
+            break;
+          case NativeDeviceOrientation.unknown:
+          default:
+            break;
+        }
+
+        int rotationCompensation =
+            ((nativeRotation - sensorOrientation + 450) % 360) ~/ 90;
+
+        double frameHeight = width;
+        double frameWidth = height;
+
+        return new FittedBox(
+          fit: fit,
+          child: new RotatedBox(
+            quarterTurns: rotationCompensation,
+            child: new SizedBox(
+              width: frameWidth,
+              height: frameHeight,
+              child: new Texture(textureId: textureId),
+            ),
+          ),
+        );
+      },
+    );
   }
 }
